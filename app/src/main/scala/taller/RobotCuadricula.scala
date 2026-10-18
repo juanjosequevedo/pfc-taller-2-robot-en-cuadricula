@@ -183,3 +183,4 @@ class RobotCuadricula {
         cabeza :: combinarAvances(resto)
     }
 }
+
