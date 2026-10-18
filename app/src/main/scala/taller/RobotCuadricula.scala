@@ -1,5 +1,7 @@
 package taller
 
+import scala.annotation.tailrec
+
 /**
  * Taller 2 — órdenes para un robot en una cuadrícula infinita.
  *
@@ -30,15 +32,70 @@ class RobotCuadricula {
   // Punto 2 -------------------------------------------------------------------
 
   /** El estado que resulta de aplicarle la orden al estado dado. */
-  def ejecutar(e: Estado, o: Orden): Estado = ???
+  def ejecutar(e: Estado, o: Orden): Estado = o match {
+    case  Avanzar(n) =>
+      e.mira match {
+        case Norte => Estado(e.x, e.y + n, e.mira)
+        case Este => Estado(e.x + n, e.y, e.mira)
+        case Sur => Estado(e.x, e.y - n, e.mira)
+        case Oeste => Estado(e.x - n, e.y, e.mira)
+      }
+
+    case Girar(sentido) => Estado(e.x, e.y, girar(e.mira, sentido))
+
+    case Repetir(veces, _) if veces <= 0 => e
+
+    case Repetir(veces, orden) => ejecutar(ejecutar(e, orden), Repetir(veces - 1, orden))
+
+    case Secuencia(ordenes) =>
+      @tailrec
+      def aux(estado: Estado, pendientes: List[Orden]): Estado =
+        pendientes match {
+          case Nil => estado
+          case cabeza :: cola => aux(ejecutar(estado, cabeza), cola)
+        }
+
+      aux(e, ordenes)
+  }
 
   // Punto 3 -------------------------------------------------------------------
 
   /** Cuántos Avanzar y Girar llega a ejecutar la orden, contando repeticiones. */
-  def cuantasBasicas(o: Orden): Int = ???
+  def cuantasBasicas(o: Orden): Int = o match {
+    case Avanzar(_) => 1
+
+    case Girar(_) => 1
+
+    case Repetir(veces, _) if veces <= 0 => 0
+
+    case Repetir(veces, orden) => veces * cuantasBasicas(orden)
+
+    case Secuencia(Nil) => 0
+
+    case Secuencia(cabeza :: cola) => cuantasBasicas(cabeza) + cuantasBasicas(Secuencia(cola))
+  }
 
   /** Niveles de anidamiento: una básica tiene 1, una compuesta uno más que la más honda. */
-  def profundidad(o: Orden): Int = ???
+  def profundidad(o: Orden): Int = o match {
+    case Avanzar(_) => 1
+
+    case Girar(_) => 1
+
+    case Repetir(_, orden) => 1 + profundidad(orden)
+
+    case Secuencia(Nil) => 1
+
+    case Secuencia(cabeza :: cola) =>
+      val profundidadCabeza = profundidad(cabeza) + 1
+      val profundidadCola = profundidad(Secuencia(cola))
+
+      if(profundidadCabeza < profundidadCola) {
+        profundidadCola
+      }
+      else {
+        profundidadCabeza
+      }
+  }
 
   // Punto 4 -------------------------------------------------------------------
 
