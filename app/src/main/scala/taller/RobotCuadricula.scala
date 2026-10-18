@@ -114,14 +114,18 @@ class RobotCuadricula {
     case cabeza :: cola => ejecutar(cabeza, o) :: aplicarA(cola, o)
   }
 
-
   /** Reemplaza cada orden básica por f(orden), respetando la estructura de las compuestas. */
   def transformar(o: Orden, f: Orden => Orden): Orden = o match {
     case Avanzar(_) => f(o)
+
     case Girar(_) => f(o)
+
     case Repetir(veces, orden) => Repetir(veces, transformar(orden, f))
+
     case Secuencia(Nil) => Secuencia(Nil)
+
     case Secuencia(ordenes) => Secuencia(ordenes.map(orden => transformar(orden, f)))
+
   }
 
   // Punto 5 -------------------------------------------------------------------
