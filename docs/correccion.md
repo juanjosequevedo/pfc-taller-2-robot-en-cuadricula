@@ -1,4 +1,6 @@
-Para justificar las funciones seguimos el ejemplo del profesor.
+En este informe explicamos por qué cada función cumple lo que pide
+el taller y por qué sus llamadas llegan a un resultado.
+
 Revisamos los casos básicos y después las órdenes que contienen otras.
 
 Usamos inducción: suponemos que una parte más pequeña funciona
@@ -107,9 +109,7 @@ ejecutar(ejecutar(e, orden), Repetir(veces - 1, orden))
 Primero ejecuta una vez y después realiza las restantes:
 
 $$
-E(e,Repetir(v,o))
-=
-E(E(e,o),Repetir(v-1,o))
+E(e,Repetir(v,o)) = E(E(e,o),Repetir(v-1,o))
 $$
 
 Así se completan una ejecución más las $v-1$ pendientes,
@@ -128,9 +128,7 @@ Sean $e_0$ el estado de entrada y $L$ la lista completa.
 - **Invariante:**
 
 $$
-E(estado,Secuencia(pendientes))
-=
-E(e_0,Secuencia(L))
+E(estado,Secuencia(pendientes)) = E(e_0,Secuencia(L))
 $$
 
 La igualdad dice que ejecutar lo que falta desde el estado actual
@@ -160,9 +158,7 @@ Primero se ejecuta la cabeza y luego se procesa la cola.
 Por la definición de una secuencia:
 
 $$
-E(estado,Secuencia(c::r))
-=
-E(E(estado,c),Secuencia(r))
+E(estado,Secuencia(c::r)) = E(E(estado,c),Secuencia(r))
 $$
 
 Por tanto, el cambio conserva el resultado completo.
@@ -211,11 +207,7 @@ una orden básica, aunque no cambie la posición.
 #### Caso de repetición
 
 $$
-B(Repetir(v,o))=
-\begin{cases}
-0 & \text{si }v\leq 0\\
-v\cdot B(o) & \text{si }v>0
-\end{cases}
+B(Repetir(v,o))=\begin{cases}0 & \text{si }v\leq 0\\v\cdot B(o) & \text{si }v>0\end{cases}
 $$
 
 Suponiendo correcto el conteo del contenido, multiplicarlo por
@@ -283,9 +275,7 @@ $$
 El resultado esperado es:
 
 $$
-P(Secuencia(c::r))
-=
-\max(1+P(c),P(Secuencia(r)))
+P(Secuencia(c::r)) = \max(1+P(c),P(Secuencia(r)))
 $$
 
 La cabeza necesita sumar el nivel exterior. La llamada sobre
@@ -315,9 +305,7 @@ Secuencia(List(o1, o2))
 Por la corrección de las secuencias:
 
 $$
-E(e,componer(o_1,o_2))
-=
-E(E(e,o_1),o_2)
+E(e,componer(o_1,o_2)) = E(E(e,o_1),o_2)
 $$
 
 Así queda justificado que ejecutar la compuesta equivale a
@@ -330,9 +318,7 @@ La función termina al construir la orden.
 Su resultado es:
 
 $$
-rutina(p)(s)(v)
-=
-Repetir(v,Secuencia(List(Avanzar(p),Girar(s))))
+rutina(p)(s)(v) = Repetir(v,Secuencia(List(Avanzar(p),Girar(s))))
 $$
 
 `componer` coloca el avance antes del giro. `Repetir` establece
@@ -362,9 +348,7 @@ Suponemos que `aplicarA(r, o)` procesa correctamente el resto.
 Para una cabeza $e$:
 
 $$
-aplicarA(e::r,o)
-=
-E(e,o)::aplicarA(r,o)
+aplicarA(e::r,o) = E(e,o)::aplicarA(r,o)
 $$
 
 La primera ejecución es correcta por el punto 2.
@@ -413,9 +397,7 @@ Se conservan las veces y se cambia solo la orden interior.
 Para una lista de órdenes:
 
 $$
-T(Secuencia(List(o_1,\ldots,o_k)),f)
-=
-Secuencia(List(T(o_1,f),\ldots,T(o_k,f)))
+T(Secuencia(List(o_1,\ldots,o_k)),f) = Secuencia(List(T(o_1,f),\ldots,T(o_k,f)))
 $$
 
 `map` transforma cada elemento y conserva su lugar.
@@ -470,9 +452,7 @@ El reemplazo mantiene el resultado.
 cero o negativas:
 
 $$
-v\leq 0
-\Rightarrow
-E(e,Repetir(v,o))=e
+v\leq 0 \Rightarrow E(e,Repetir(v,o))=e
 $$
 
 Una secuencia vacía hace lo mismo, así que puede sustituirla.
@@ -516,9 +496,7 @@ o al oeste.
 Por tanto:
 
 $$
-E(e,Secuencia(List(Avanzar(a),Avanzar(b))))
-=
-E(e,Avanzar(a+b))
+E(e,Secuencia(List(Avanzar(a),Avanzar(b)))) = E(e,Avanzar(a+b))
 $$
 
 Si la suma da cero, también se puede eliminar ese avance
@@ -529,11 +507,7 @@ por la primera regla.
 Por la definición de ejecución:
 
 $$
-E(e,Secuencia(List(o)))
-=
-E(E(e,o),Secuencia(Nil))
-=
-E(e,o)
+E(e,Secuencia(List(o))) = E(E(e,o),Secuencia(Nil)) = E(e,o)
 $$
 
 Quitar la secuencia exterior conserva el efecto de su único elemento.
@@ -623,11 +597,7 @@ estado que la versión original.
 Además:
 
 $$
-E(e,Secuencia(l))
-=
-E(e,Secuencia(L(l)))
-=
-E(e,Secuencia(C(L(l))))
+E(e,Secuencia(l)) = E(e,Secuencia(L(l))) = E(e,Secuencia(C(L(l))))
 $$
 
 La revisión final solo devuelve una secuencia vacía, su único
