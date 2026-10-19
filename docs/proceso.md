@@ -498,7 +498,7 @@ sequenceDiagram
     L-->>S: lista con avances 7, -7 y 4
     S->>C: combina la lista
     Note over C: suma 7 y -7 y elimina el cero
-    C-->>S: List(Avanzar(4))
+    C-->>S: lista con Avanzar(4)
     Note over S: devuelve Avanzar(4)
 ```
 
