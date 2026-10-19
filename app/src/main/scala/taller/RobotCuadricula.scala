@@ -101,7 +101,7 @@ class RobotCuadricula {
 
   /** La secuencia de las dos órdenes. */
   def componer(o1: Orden, o2: Orden): Orden =
-    Secuencia(List(o1,o2))
+    Secuencia(List(o1, o2))
 
   /** Currificada: fijados los pasos y el giro, queda una función de las veces. */
   def rutina(pasos: Int)(giro: Sentido)(veces: Int): Orden =
@@ -131,50 +131,25 @@ class RobotCuadricula {
   // Punto 5 -------------------------------------------------------------------
 
   /** Una orden equivalente más corta, con las reglas del enunciado. */
-  def simplificar(o: Orden): Orden = o match {
-    case Avanzar(0) => Secuencia(Nil)
-    case Avanzar(n) => Avanzar(n)
-    case Girar(sentido) => Girar(sentido)
-    case Repetir(0, orden) => Secuencia(Nil)
-    case Repetir(1, orden) => simplificar(orden)
+  def simplificar(o: Orden): Orden = {
 
-    case Repetir(veces, orden) =>
-      simplificar(orden) match {
-        case Secuencia(Nil) => Secuencia(Nil)
-        case otra => Repetir(veces, otra)
+    def simplificarLista(ordenes: List[Orden]): List[Orden] = ordenes match {
+        case Nil => Nil
+
+        case cabeza :: resto =>
+          val resultado = simplificar(cabeza)
+
+          resultado match {
+            case Secuencia(Nil) => simplificarLista(resto)
+
+            case Secuencia(ordenesInternas) =>
+              simplificarLista(ordenesInternas) ++ simplificarLista(resto)
+
+            case otra => otra :: simplificarLista(resto)
+          }
       }
 
-    case Secuencia(ordenes) =>
-
-      combinarAvances(simplificarLista(ordenes)) match {
-        case Nil => Secuencia(Nil)
-        case List(orden) => orden
-        case lista => Secuencia(lista)
-      }
-
-  }
-
-  def simplificarLista(ordenes: List[Orden]): List[Orden] =
-    ordenes match {
-      case Nil => Nil
-
-      case cabeza :: resto =>
-
-        val resultado = simplificar(cabeza)
-
-        resultado match {
-          case Secuencia(Nil) => simplificarLista(resto)
-
-          case Secuencia(ordenesInternas) =>
-            simplificarLista(ordenesInternas) ++ simplificarLista(resto)
-
-          case otra => otra :: simplificarLista(resto)
-        }
-
-    }
-
-  def combinarAvances(ordenes: List[Orden]): List[Orden] =
-    ordenes match {
+    def combinarAvances(ordenes: List[Orden]): List[Orden] = ordenes match {
       case Nil => Nil
 
       case Avanzar(0) :: resto =>
@@ -186,5 +161,32 @@ class RobotCuadricula {
       case cabeza :: resto =>
         cabeza :: combinarAvances(resto)
     }
+
+    o match {
+      case Avanzar(0) => Secuencia(Nil)
+
+      case Avanzar(n) => Avanzar(n)
+
+      case Girar(sentido) => Girar(sentido)
+
+      case Repetir(veces, _) if veces <= 0 =>
+        Secuencia(Nil)
+
+      case Repetir(1, orden) =>
+        simplificar(orden)
+
+      case Repetir(veces, orden) => simplificar(orden) match {
+        case Secuencia(Nil) => Secuencia(Nil)
+        case otra => Repetir(veces, otra)
+        }
+
+      case Secuencia(ordenes) => combinarAvances(simplificarLista(ordenes)) match {
+        case Nil => Secuencia(Nil)
+        case List(orden) => orden
+        case lista => Secuencia(lista)
+        }
+    }
+  }
 }
+
 
