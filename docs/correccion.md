@@ -1,279 +1,667 @@
-# Ejemplo de informe de corrección
+Para justificar las funciones seguimos el ejemplo del profesor.
+Revisamos los casos básicos y después las órdenes que contienen otras.
 
-Fundamentos de Programación Funcional y Concurrente.
-Documento realizado por el docente Juan Francisco Díaz.
+Usamos inducción: suponemos que una parte más pequeña funciona
+y explicamos por qué la orden completa también lo hace.
 
-## 1. Argumentar la corrección de programas recursivos
+En la auxiliar de cola usamos un invariante, que es una condición
+que se mantiene durante el recorrido.
 
-Sea $f : A \to B$ una función, y $A$ un conjunto definido recursivamente
-(recordar la definición de Matemáticas Discretas I), como por ejemplo los
-naturales o las listas.
+Llamamos $E(e,o)$ al estado esperado al ejecutar la orden $o$
+desde el estado $e$.
 
-Sea $P_f$ un programa recursivo (lineal o en árbol) desarrollado en Scala (o en
-cualquier lenguaje de programación) hecho para calcular $f$:
+Las fórmulas de coordenadas y conteos se consideran para resultados
+que caben en `Int`, el tipo que utiliza el modelo entregado.
 
-```scala
-def Pf(a: A): B = { // Pf recibe a de tipo A, y devuelve f(a) de tipo B
-  ...
-}
-```
+## 1. Corrección de `girar`
 
-¿Cómo argumentar que $P_f(a)$ siempre devuelve $f(a)$ como respuesta? Es decir,
-¿cómo argumentar que $P_f$ es correcto con respecto a su especificación?
+### Qué debe calcular
 
-La respuesta es sencilla: demostrando el siguiente teorema.
+Debe devolver la dirección que queda después de un giro de
+noventa grados.
 
-```math
-\forall a \in A : P_f(a) == f(a)
-```
+| Dirección actual | Derecha | Izquierda |
+|---|---|---|
+| Norte | Este | Oeste |
+| Este | Sur | Norte |
+| Sur | Oeste | Este |
+| Oeste | Norte | Sur |
 
-Cuando uno tiene que demostrar que algo se cumple para todos los elementos de
-un conjunto definido recursivamente, es natural usar inducción estructural. En
-términos prácticos, esto significa demostrar que:
+### Justificación
 
-- Para cada valor básico $a$ de $A$, se tiene que $P_f(a) == f(a)$.
-- Para cada valor $a \in A$ construido recursivamente a partir de otro(s)
-  valor(es) $a' \in A$, se tiene que
-  $P_f(a') == f(a') \rightarrow P_f(a) == f(a)$. (Esta es la hipótesis de
-  inducción).
+El `match` contiene las ocho parejas de la tabla. Todas las
+combinaciones permitidas tienen una respuesta.
 
-### Ejemplo: factorial recursivo
+Por ejemplo:
 
-Sea $f : \mathbb{N} \to \mathbb{N}$ la función que calcula el factorial de un
-número natural, es decir, $f(n) = n!$. Y sea $P_f$ el siguiente programa en
-Scala:
+$$
+girar(Este,Derecha)=Sur
+$$
 
-```scala
-def Pf(n: Int): Int = { // Pf recibe n de tipo Int, y devuelve n! de tipo Int
-  if (n == 0) 1 else n * Pf(n - 1)
-}
-```
+$$
+girar(Oeste,Izquierda)=Sur
+$$
 
-Vamos a demostrar que $\forall n \in \mathbb{N} : P_f(n) == n!$
+Los resultados coinciden con el giro solicitado.
 
-**Caso base:** $n = 0$
+### Terminación
 
-```math
-P_f(0) \rightarrow \text{if } (0 == 0)\ 1 \text{ else } 0 \ast P_f(-1) \rightarrow 1
-```
+La función escoge un caso y devuelve su dirección. No necesita
+llamarse de nuevo.
 
-Por otro lado, $f(0) = 0! = 1$. Entonces $P_f(0) == f(0)$.
+## 2. Corrección de `ejecutar`
 
-**Caso de inducción:** $n = k + 1$, $k \geq 0$. Hay que demostrar:
-$P_f(k) == f(k) \rightarrow P_f(k + 1) == f(k + 1)$
+### Casos básicos
 
-```math
-P_f(k+1) \rightarrow \text{if } (k+1 == 0)\ 1 \text{ else } (k+1) \ast P_f(k) \rightarrow (k+1) \ast P_f(k)
-```
+Sea el estado $e=(x,y,d)$.
 
-Usando la hipótesis de inducción (HI):
+Los avances deben producir:
 
-```math
-\rightarrow (k+1) \ast k! = (k+1)!
-```
+$$
+E((x,y,Norte),Avanzar(n))=(x,y+n,Norte)
+$$
 
-Por lo tanto, $P_f(k + 1) == f(k + 1)$.
+$$
+E((x,y,Este),Avanzar(n))=(x+n,y,Este)
+$$
 
-Concluimos por inducción que $\forall n \in \mathbb{N} : P_f(n) == n!$
+$$
+E((x,y,Sur),Avanzar(n))=(x,y-n,Sur)
+$$
 
-### Ejemplo: el máximo de una lista
+$$
+E((x,y,Oeste),Avanzar(n))=(x-n,y,Oeste)
+$$
 
-Sea $f : \text{List}[\mathbb{N}] \to \mathbb{N}$ la función que calcula el
-máximo de una lista de enteros positivos, no vacía. Y sea $P_f$ el siguiente
-programa en Scala:
+El código realiza esas operaciones y mantiene la dirección.
+Con un número negativo se obtiene el movimiento contrario.
 
-```scala
-def maxLin(l: List[Int]): Int = {
-  if (l.tail.isEmpty) l.head
-  else math.max(maxLin(l.tail), l.head)
-}
-```
+Para un giro:
 
-Demostraremos que:
+$$
+E((x,y,d),Girar(s))=(x,y,girar(d,s))
+$$
 
-```math
-\forall n \in \mathbb{N} \setminus \{0\} : P_f(\text{List}(a_1, a_2, \ldots, a_n)) == f(\text{List}(a_1, a_2, \ldots, a_n))
-```
+Las coordenadas se conservan. Por la corrección de `girar`,
+la nueva dirección es la indicada.
 
-**Caso base:** $n = 1$
+### Repeticiones
 
-```math
-P_f(\text{List}(a_1)) \rightarrow \text{if } \text{List}(a_1).\text{tail.isEmpty then } \text{List}(a_1).\text{head else } \ldots \rightarrow \text{List}(a_1).\text{head} \rightarrow a_1
-```
+Si $v\leq 0$, la orden no se ejecuta:
 
-Por otro lado, $f(\text{List}(a_1)) = a_1$. Entonces
-$P_f(\text{List}(a_1)) == f(\text{List}(a_1))$.
+$$
+E(e,Repetir(v,o))=e
+$$
 
-**Caso de inducción:** $n = k + 1$, $k \geq 1$. Se debe demostrar:
+El programa devuelve ese mismo estado.
 
-```math
-P_f(\text{List}(b_1, b_2, \ldots, b_k)) == f(\text{List}(b_1, b_2, \ldots, b_k)) \rightarrow P_f(\text{List}(a_1, a_2, \ldots, a_{k+1})) == f(\text{List}(a_1, a_2, \ldots, a_{k+1}))
-```
+Para $v>0$, suponemos que ejecutar el contenido es correcto
+y que repetirlo $v-1$ veces también produce la respuesta esperada.
 
-Empecemos por calcular qué devuelve $P_f$ usando el modelo de sustitución:
-
-```math
-P_f(L) \rightarrow \text{if } L.\text{tail.isEmpty then } L.\text{head else math.max}(P_f(L.\text{tail}), L.\text{head})
-```
-
-```math
-\rightarrow \text{math.max}(P_f(\text{List}(a_2, \ldots, a_{k+1})), a_1)
-```
-
-Sea $b = P_f(\text{List}(a_2, \ldots, a_{k+1}))$; por la hipótesis de
-inducción, $b = f(\text{List}(a_2, \ldots, a_{k+1}))$. Hay dos posibilidades:
-
-- Si $\text{math.max}(b, a_1) = b$, entonces $b \geq a_1$ y
- $b == f(\text{List}(a_1, a_2, \ldots, a_{k+1}))$.
-- Si $\text{math.max}(b, a_1) = a_1$, entonces $a_1 \geq b$ y
- $a_1 == f(\text{List}(a_1, a_2, \ldots, a_{k+1}))$.
-
-Por lo tanto, $P_f(L) == f(L)$.
-
-Concluimos por inducción que:
-
-```math
-\forall n \in \mathbb{N} \setminus \{0\} : P_f(\text{List}(a_1, a_2, \ldots, a_n)) == f(\text{List}(a_1, a_2, \ldots, a_n))
-```
-
-## 2. Argumentar la corrección de programas iterativos
-
-Para argumentar la corrección de programas iterativos, se debe formalizar cómo
-es la iteración. Esto implica definir:
-
-- Cómo se representa un estado de la iteración, $s$.
-- Cuál es el estado inicial, $s_0$.
-- Cuál es el estado final (o cómo se reconoce que un estado es final): $s_f$.
-- Qué condición (o predicado) cumple todo estado: $\text{Inv}(s)$ (invariante
-  de la iteración).
-- El mecanismo para pasar de un estado al siguiente: $\text{transformar}(s)$.
-  Si $s_i$ es el estado $i$, entonces $\text{transformar}(s_i) = s_{i+1}$.
-
-Un programa iterativo tiene la siguiente forma:
+La expresión del código es:
 
 ```scala
-def Pf(a: A): B = { // Pf recibe a de tipo A, y devuelve f(a) de tipo B
-  def Pf_iter(s: Estado): B =
-    if (esFinal(s)) respuesta(s) else Pf_iter(transformar(s))
-  Pf_iter(s0)
-}
+ejecutar(ejecutar(e, orden), Repetir(veces - 1, orden))
 ```
 
-Demostración de corrección:
+Primero ejecuta una vez y después realiza las restantes:
 
-- $\text{Inv}(s_0)$: el estado inicial cumple la condición invariante.
-- Si $(s_i \neq s_f \land \text{Inv}(s_i)) \rightarrow \text{Inv}(\text{transformar}(s_i))$:
-  el nuevo estado cumple la condición invariante si el estado anterior la
-  cumplía.
-- De lo anterior se concluye $\text{Inv}(s_f)$, es decir, el estado final
-  cumple la condición invariante. Luego,
-  $\text{Inv}(s_f) \rightarrow \text{respuesta}(s_f) == f(a)$.
-- Finalmente, demostrar que siempre se llega al estado final $s_f$. Esto
-  implica que
-  $P_f(a) == \text{iter}(s_0) == \text{respuesta}(s_f) == f(a)$.
+$$
+E(e,Repetir(v,o))
+=
+E(E(e,o),Repetir(v-1,o))
+$$
 
-### Ejemplo: factorial iterativo
+Así se completan una ejecución más las $v-1$ pendientes,
+es decir, las $v$ solicitadas.
 
-Considere el siguiente programa iterativo en Scala para calcular la función
-factorial:
+### Secuencias: estado y cambios
+
+Suponemos que las órdenes contenidas se ejecutan correctamente
+desde cualquier estado.
+
+Sean $e_0$ el estado de entrada y $L$ la lista completa.
+
+- **Estado de la auxiliar:** $(estado,pendientes)$.
+- **Inicio:** $(e_0,L)$.
+- **Final:** `pendientes` es `Nil`.
+- **Invariante:**
+
+$$
+E(estado,Secuencia(pendientes))
+=
+E(e_0,Secuencia(L))
+$$
+
+La igualdad dice que ejecutar lo que falta desde el estado actual
+debe dar el mismo resultado que ejecutar todo desde el comienzo.
+
+Si los pendientes son $c::r$, el cambio es:
+
+$$
+(estado,c::r)\rightarrow(E(estado,c),r)
+$$
+
+### Demostración de la auxiliar
+
+**1. Al comenzar.**
+
+El estado vale $e_0$ y los pendientes son $L$:
+
+$$
+E(e_0,Secuencia(L))=E(e_0,Secuencia(L))
+$$
+
+Se cumple el invariante.
+
+**2. Al continuar.**
+
+Primero se ejecuta la cabeza y luego se procesa la cola.
+Por la definición de una secuencia:
+
+$$
+E(estado,Secuencia(c::r))
+=
+E(E(estado,c),Secuencia(r))
+$$
+
+Por tanto, el cambio conserva el resultado completo.
+
+**3. Al terminar.**
+
+La secuencia vacía no modifica el estado:
+
+$$
+E(estado,Secuencia(Nil))=estado
+$$
+
+Por el invariante, ese valor es la respuesta de ejecutar toda la lista.
+
+**4. Por qué llega al final.**
+
+La auxiliar retira un elemento por llamada. Las repeticiones
+positivas disminuyen en uno y las órdenes interiores son finitas.
+
+Los avances, giros y casos vacíos terminan directamente.
+Por eso se completa la ejecución.
+
+## 3. Corrección de los conteos
+
+### 3.1. `cuantasBasicas`
+
+Llamamos $B(o)$ al número de avances y giros que se ejecutarían.
+
+#### Casos base
+
+$$
+B(Avanzar(n))=1
+$$
+
+$$
+B(Girar(s))=1
+$$
+
+$$
+B(Secuencia(Nil))=0
+$$
+
+El programa devuelve esos valores. Un avance de cero cuenta como
+una orden básica, aunque no cambie la posición.
+
+#### Caso de repetición
+
+$$
+B(Repetir(v,o))=
+\begin{cases}
+0 & \text{si }v\leq 0\\
+v\cdot B(o) & \text{si }v>0
+\end{cases}
+$$
+
+Suponiendo correcto el conteo del contenido, multiplicarlo por
+las veces produce el total de acciones.
+
+#### Caso de secuencia
+
+Para una cabeza $c$ y una cola $r$:
+
+$$
+B(Secuencia(c::r))=B(c)+B(Secuencia(r))
+$$
+
+La hipótesis es que ambos conteos son correctos.
+Su suma incluye todas las acciones de la lista, respetando
+las repeticiones que contenga cada elemento.
+
+#### Terminación
+
+Cada llamada entra en una orden interior o continúa con una
+lista más corta. Se llega a una básica o a un caso vacío.
+
+### 3.2. `profundidad`
+
+Llamamos $P(o)$ al número de niveles de una orden.
+
+#### Casos base
+
+$$
+P(Avanzar(n))=P(Girar(s))=1
+$$
+
+$$
+P(Secuencia(Nil))=1
+$$
+
+Estos resultados coinciden con el enunciado.
+
+#### Caso de repetición
+
+$$
+P(Repetir(v,o))=1+P(o)
+$$
+
+Si el contenido tiene la profundidad correcta, sumar uno incluye
+la repetición que lo contiene.
+
+Las veces no afectan este cálculo. Se mide la estructura,
+aunque la orden no llegue a ejecutarse.
+
+#### Caso de secuencia
+
+El código compara:
+
+$$
+1+P(c)
+$$
+
+y:
+
+$$
+P(Secuencia(r))
+$$
+
+El resultado esperado es:
+
+$$
+P(Secuencia(c::r))
+=
+\max(1+P(c),P(Secuencia(r)))
+$$
+
+La cabeza necesita sumar el nivel exterior. La llamada sobre
+la cola ya cuenta el de la secuencia.
+
+Suponiendo correctos los valores interiores, el `if` selecciona
+el mayor y obtiene la rama más profunda.
+
+Cuando la cola está vacía, su profundidad vale uno. Esto no altera
+la respuesta, porque la cabeza con su nivel exterior vale al menos dos.
+
+#### Terminación
+
+Se recorren las órdenes interiores y se reduce la lista.
+Los casos básicos devuelven un número directamente.
+
+## 4. Corrección de las rutinas
+
+### 4.1. `componer`
+
+Construye:
 
 ```scala
-def Pf(n: Int): Int = { // Pf recibe n de tipo Int, y devuelve n! de tipo Int
-  def Pf_iter(i: Int, n: Int, ac: Int): Int =
-    if (i > n) ac else Pf_iter(i + 1, n, i * ac)
-  Pf_iter(1, n, 1)
-}
+Secuencia(List(o1, o2))
 ```
 
-Este programa implementa el siguiente proceso iterativo:
+Por la corrección de las secuencias:
 
-- Un estado $s = (i, n, ac)$.
-- El estado inicial es $s_0 = (1, n, 1)$.
-- $(i, n, ac)$ es final si $i > n$, o lo que es lo mismo, si $i = n + 1$.
-- La invariante de ciclo es
-  $\text{Inv}(i, n, ac) \equiv i \leq n + 1 \land ac = (i-1)!$.
-  La invariante de ciclo es una relación que SIEMPRE se cumple en el ciclo.
-- $\text{transformar}((i, n, ac)) = (i+1, n, i \ast ac)$.
+$$
+E(e,componer(o_1,o_2))
+=
+E(E(e,o_1),o_2)
+$$
 
-Ahora, demostramos los puntos mencionados:
+Así queda justificado que ejecutar la compuesta equivale a
+ejecutar primero una parte y después la otra.
 
-**1.** $\text{Inv}(s_0)$: el estado inicial cumple la condición invariante.
+La función termina al construir la orden.
 
-```math
-s_0 = (1, n, 1) \implies 1 \leq n + 1 \land 1 = 0!
-```
+### 4.2. `rutina`
 
-**2.** La invariante se mantiene con la transformación de estados,
-$(s_i \neq s_f \land \text{Inv}(s_i)) \rightarrow \text{Inv}(\text{transformar}(s_i))$:
+Su resultado es:
 
-1. Primer cambio, $i = i + 1$, lo que implica $ac = ((i+1) - 1)! = i!$.
-2. Segundo cambio, $ac = i \ast ac$, entonces $ac = (i - 1)! \ast i = i!$.
-3. Como se puede ver en ambos cambios indicados en la transformación, la
-   invariante se mantiene.
+$$
+rutina(p)(s)(v)
+=
+Repetir(v,Secuencia(List(Avanzar(p),Girar(s))))
+$$
 
-**3.** $\text{Inv}(s_f) \rightarrow \text{respuesta}(s_f) == f(a)$
+`componer` coloca el avance antes del giro. `Repetir` establece
+cuántas veces se ejecuta ese par.
 
-```math
-(n + 1 \leq n + 1) \land ac = ((n+1)-1)! \rightarrow ac == n!
-```
+Recibir los argumentos en grupos permite fijar los pasos y el
+sentido antes de indicar las veces. El resultado conserva
+el orden solicitado.
 
-**4.** En cada paso, la componente $i$ del estado incrementa, acercándose a $n+1$.
-Después de $n$ iteraciones, se alcanza $n+1$.
+La construcción termina directamente. Su ejecución queda
+justificada por lo demostrado para `ejecutar`.
 
-Esto implica que $P_f(n) == \text{iter}(1, n, 1) == n!$
+### 4.3. `aplicarA`
 
-### Ejemplo: el máximo de una lista
+#### Caso base
 
-Se desea calcular el máximo de una lista de enteros positivos, no vacía. Sea
-$f : \text{List}[\mathbb{N}] \to \mathbb{N}$ la función que calcula ese valor.
-Y sea $P_f$ el siguiente programa en Scala:
+$$
+aplicarA(Nil,o)=Nil
+$$
 
-```scala
-def maxIt(l: List[Int]): Int = {
-  def maxAux(max: Int, l: List[Int]): Int = {
-    if (l.isEmpty) max
-    else maxAux(math.max(max, l.head), l.tail)
-  }
-  maxAux(l.head, l.tail)
-}
-```
+Sin estados de entrada, no hay resultados que calcular.
 
-Este programa implementa el siguiente proceso iterativo:
+#### Caso de inducción
 
-- Un estado $s = (max, l)$ donde $l = \text{List}(a_i, a_{i+1}, \ldots, a_k)$
-  es una cola de $L$.
-- El estado inicial es
-  $s_0 = (L.\text{head}, L.\text{tail}) = (a_1, \text{List}(a_2, \ldots, a_k))$.
-- $s = (max, l)$ es final si $l$ es vacía.
-- $\text{Inv}(max, l) \equiv l = \text{List}(a_i, a_{i+1}, \ldots, a_k) \land max = f(\text{List}(a_1, a_2, \ldots, a_{i-1}))$.
-- $\text{transformar}((max, l)) = (nmax, l.\text{tail})$ donde $nmax = max$ si
-  $max \geq l.\text{head}$, y $nmax = l.\text{head}$ si no.
+Suponemos que `aplicarA(r, o)` procesa correctamente el resto.
 
-Demostración de los puntos:
+Para una cabeza $e$:
 
-**1.** $\text{Inv}(s_0)$: el estado inicial cumple la condición invariante.
+$$
+aplicarA(e::r,o)
+=
+E(e,o)::aplicarA(r,o)
+$$
 
-```math
-s_0 = (a_1, \text{List}(a_2, \ldots, a_k)) \implies a_1 = f(\text{List}(a_1))
-```
+La primera ejecución es correcta por el punto 2.
+La llamada sobre la cola también lo es por la hipótesis.
 
-**2.** $(s_i \neq s_f \land \text{Inv}(s_i)) \rightarrow \text{Inv}(\text{transformar}(s_i))$
+Al unirlas con `::`, cada respuesta ocupa el lugar correspondiente
+y cada recorrido parte de su propio estado.
 
-```math
-\neg\, l.\text{isEmpty} \land l = \text{List}(a_i, a_{i+1}, \ldots, a_k) \land max = f(\text{List}(a_1, a_2, \ldots, a_{i-1}))
-```
+#### Terminación
 
-```math
-\rightarrow l.\text{tail} = \text{List}(a_{i+1}, \ldots, a_k) \land nmax = f(\text{List}(a_1, \ldots, a_i))
-```
+La lista pierde un elemento en cada llamada. Además,
+cada ejecución de la orden termina.
 
-**3.** $\text{Inv}(s_f) \rightarrow \text{respuesta}(s_f) == f(a)$
+### 4.4. `transformar`
 
-```math
-\text{Inv}((max, \text{List}())) \rightarrow max = f(\text{List}(a_1, \ldots, a_k))
-```
+Llamamos $T(o,f)$ a la transformación esperada.
 
-**4.** En cada paso, la lista $l$ se reduce, acercándose a ser vacía. Después de
-$k$ iteraciones, $l = \text{List}()$.
+#### Casos base
 
-Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
+$$
+T(Avanzar(n),f)=f(Avanzar(n))
+$$
+
+$$
+T(Girar(s),f)=f(Girar(s))
+$$
+
+$$
+T(Secuencia(Nil),f)=Secuencia(Nil)
+$$
+
+El código devuelve esos resultados.
+
+#### Repeticiones
+
+Suponemos que el contenido se transforma correctamente:
+
+$$
+T(Repetir(v,o),f)=Repetir(v,T(o,f))
+$$
+
+Se conservan las veces y se cambia solo la orden interior.
+
+#### Secuencias
+
+Para una lista de órdenes:
+
+$$
+T(Secuencia(List(o_1,\ldots,o_k)),f)
+=
+Secuencia(List(T(o_1,f),\ldots,T(o_k,f)))
+$$
+
+`map` transforma cada elemento y conserva su lugar.
+Por la hipótesis, los resultados interiores cumplen lo pedido.
+
+`f` se aplica a las básicas originales. Si devuelve otra estructura,
+se utiliza tal como la entrega.
+
+#### Terminación
+
+La función entra en un número finito de partes. Termina siempre
+que cada aplicación de `f` también lo haga.
+
+## 5. Corrección de `simplificar`
+
+### Qué debe conservar
+
+Llamamos $S(o)$ a la versión simplificada.
+
+Queremos demostrar:
+
+$$
+E(e,o)=E(e,S(o))
+$$
+
+Se conserva la posición y la dirección finales.
+Los pasos intermedios pueden ser diferentes.
+
+### Regla 1: avanzar cero
+
+Sumar o restar cero deja las coordenadas iguales:
+
+$$
+x+0=x
+$$
+
+$$
+y+0=y
+$$
+
+La dirección tampoco cambia. Por eso:
+
+$$
+E(e,Avanzar(0))=e=E(e,Secuencia(Nil))
+$$
+
+El reemplazo mantiene el resultado.
+
+### Regla 2: repetición no positiva
+
+`ejecutar` devuelve el estado recibido cuando las veces son
+cero o negativas:
+
+$$
+v\leq 0
+\Rightarrow
+E(e,Repetir(v,o))=e
+$$
+
+Una secuencia vacía hace lo mismo, así que puede sustituirla.
+
+### Regla 3: repetir una sola vez
+
+Ejecutar una vez equivale a ejecutar directamente:
+
+$$
+E(e,Repetir(1,o))=E(e,o)
+$$
+
+Suponemos que la simplificación interior conserva su efecto:
+
+$$
+E(e,o)=E(e,S(o))
+$$
+
+Entonces se puede devolver `simplificar(orden)`.
+
+### Regla 4: sumar avances seguidos
+
+Los dos avances usan la misma dirección porque no hay un giro
+entre ellos.
+
+Para el norte:
+
+$$
+(y+a)+b=y+(a+b)
+$$
+
+Para el sur:
+
+$$
+(y-a)-b=y-(a+b)
+$$
+
+Las mismas igualdades se cumplen sobre $x$ al mirar al este
+o al oeste.
+
+Por tanto:
+
+$$
+E(e,Secuencia(List(Avanzar(a),Avanzar(b))))
+=
+E(e,Avanzar(a+b))
+$$
+
+Si la suma da cero, también se puede eliminar ese avance
+por la primera regla.
+
+### Regla 5: secuencia con una orden
+
+Por la definición de ejecución:
+
+$$
+E(e,Secuencia(List(o)))
+=
+E(E(e,o),Secuencia(Nil))
+=
+E(e,o)
+$$
+
+Quitar la secuencia exterior conserva el efecto de su único elemento.
+
+### Regla 6: retirar vacíos
+
+Una orden vacía entrega el mismo estado que recibe.
+
+Al quitarla de una lista, la siguiente orden comienza desde
+la misma posición y dirección. El resultado final se mantiene.
+
+Si el contenido simplificado de una repetición queda vacío,
+repetirlo tampoco cambia el estado:
+
+$$
+E(e,Repetir(v,Secuencia(Nil)))=e
+$$
+
+Por eso también se elimina esa repetición.
+
+### Secuencias interiores
+
+El código coloca las órdenes de una secuencia interior en
+la lista que la contiene.
+
+Por ejemplo, una secuencia con $a$ y otra secuencia con $b$ y $c$
+produce:
+
+$$
+E(E(E(e,a),b),c)
+$$
+
+Una lista con $a$, $b$ y $c$ da la misma expresión.
+Se conserva el orden de ejecución, así que se puede quitar
+esa separación interior.
+
+### Corrección de las auxiliares
+
+Llamamos $L(l)$ al resultado de `simplificarLista(l)` y
+$C(l)$ al de `combinarAvances(l)`.
+
+Para la primera auxiliar queremos:
+
+$$
+E(e,Secuencia(l))=E(e,Secuencia(L(l)))
+$$
+
+Con `Nil`, ambos lados dejan el estado igual.
+
+Para una lista no vacía, suponemos que simplificar la cabeza
+y procesar el resto conservan sus efectos desde cualquier estado.
+
+La auxiliar reduce la cabeza y luego puede quitar un vacío,
+incorporar una secuencia interior o conservar la orden obtenida.
+
+Cada posibilidad corresponde a una regla ya justificada.
+Al continuar con el resto en su orden original, se mantiene
+la igualdad completa.
+
+Para la segunda buscamos:
+
+$$
+E(e,Secuencia(l))=E(e,Secuencia(C(l)))
+$$
+
+La lista vacía cumple la igualdad.
+
+Si aparece un avance de cero, se retira por la regla 1.
+Si hay dos avances contiguos, se suman por la regla 4.
+En otro caso se conserva la cabeza y se procesa el resto.
+
+Cada llamada trabaja con una lista más corta. Suponiendo correcto
+ese resultado, la lista completa conserva su efecto.
+
+### Órdenes compuestas
+
+La hipótesis es que simplificar las partes interiores mantiene
+su resultado desde cualquier estado.
+
+En una repetición, cada ejecución del contenido simplificado
+produce el mismo estado que antes. Por eso la cantidad de veces
+restantes también conserva el resultado.
+
+En una secuencia, cada parte entrega a la siguiente el mismo
+estado que la versión original.
+
+Además:
+
+$$
+E(e,Secuencia(l))
+=
+E(e,Secuencia(L(l)))
+=
+E(e,Secuencia(C(L(l))))
+$$
+
+La revisión final solo devuelve una secuencia vacía, su único
+elemento o la lista reducida. Esos casos ya están justificados.
+
+Así se obtiene:
+
+$$
+E(e,o)=E(e,S(o))
+$$
+
+### Por qué se aplican las reducciones necesarias
+
+Primero se simplifica el contenido y se quitan los vacíos.
+Las secuencias interiores se incorporan a la lista exterior.
+
+Después se unen los avances que quedaron juntos.
+Al obtener una suma, `combinarAvances` vuelve a revisarla antes
+de avanzar. Esto permite continuar sumando o quitar un cero nuevo.
+
+Por eso, dentro de las reglas revisadas, no hace falta reiniciar
+toda la orden mediante una pasada general adicional.
+
+### Terminación
+
+Las llamadas sobre órdenes interiores trabajan con estructuras
+más pequeñas. La simplificación elimina partes o conserva las que
+ya estaban; no aumenta su tamaño.
+
+`simplificarLista` recorre listas finitas. Si vuelve a entrar en una
+secuencia obtenida, procesa su contenido, que tiene menos partes
+que la secuencia que lo contiene.
+
+`combinarAvances` reduce la cantidad de elementos en cada llamada:
+elimina uno, junta dos en uno o continúa con la cola.
+
+Por eso se llega a los casos básicos o vacíos y la función termina.
