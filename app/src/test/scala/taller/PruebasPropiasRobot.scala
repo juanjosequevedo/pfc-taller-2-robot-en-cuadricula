@@ -60,8 +60,10 @@ class PruebasPropiasRobot extends AnyFunSuite {
       Secuencia(List(Girar(Izquierda), Avanzar(3)))))) == Estado(-3,2,Oeste))
   }
 
-  test("ejecutar: avanzar al sur disminuye y") {
-    assert(ejecutar(Estado(5, 5, Sur), Avanzar(2)) == Estado(5, 3, Sur))
+  test("ejecutar: avanzar al sur y luego al oeste cambia ambas coordenadas") {
+    assert(ejecutar(Estado(8, 3, Sur),
+      Secuencia(List(Avanzar(3), Girar(Derecha), Avanzar(2)))) ==
+      Estado(6, 0, Oeste))
   }
 
   test("ejecutar: una repetición negativa deja intacto el estado") {
@@ -117,12 +119,17 @@ class PruebasPropiasRobot extends AnyFunSuite {
       List(Estado(1, 7, Norte), Estado(-1, -1, Oeste), Estado(-2, -2, Sur)))
   }
 
-  test("transformar: duplica avances deja los giros como estaban") {
-    val orden = transformar(Repetir(2,Secuencia(List(Avanzar(3),Girar(Derecha)))), {
-      case Avanzar(n) => Avanzar(4 * n)
-      case otra => otra
-    })
-    assert(orden == Repetir(2, Secuencia(List(Avanzar(12), Girar(Derecha)))))
+  test("transformar: cuadruplica los avances dentro de una repetición y conserva los giros") {
+    val orden = transformar(
+      Repetir(2, Secuencia(List(Avanzar(2), Girar(Izquierda), Avanzar(3)))),
+      {
+        case Avanzar(n) => Avanzar(4 * n)
+        case otra => otra
+      }
+    )
+    assert(orden == Repetir(2, Secuencia(List(
+      Avanzar(8), Girar(Izquierda), Avanzar(12)
+    ))))
   }
 
   test("transformar: reemplaza los giros sin alterar los avances") {
